@@ -1,126 +1,341 @@
-<!doctype html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#090909">
-<title>CLICK IT — Camera v1</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#090a0f">
+<title>CLICK IT</title>
+
 <style>
-*{box-sizing:border-box}html,body{margin:0;background:#000;color:#fff;font-family:Arial,sans-serif}
-body{min-height:100vh}.app{max-width:430px;margin:auto;min-height:100vh;background:#090909;position:relative;overflow:hidden}
-.camera{height:100vh;min-height:650px;position:relative;background:#090909;overflow:hidden}
-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#151515}
-video.mirror{transform:scaleX(-1)}
-.scrim{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.62),transparent 22%,transparent 68%,rgba(0,0,0,.78))}
-.top{position:absolute;top:0;left:0;right:0;padding:22px 18px;display:flex;justify-content:space-between;align-items:center;z-index:4}
-.logo{font-weight:900;letter-spacing:2px;font-size:22px}.pill{background:rgba(25,25,25,.75);border:1px solid #555;padding:10px 13px;border-radius:22px;color:#fff}
-.controls{position:absolute;top:85px;right:18px;display:flex;flex-direction:column;gap:12px;z-index:4}.ctrl{width:42px;height:42px;border-radius:50%;border:1px solid #666;background:rgba(20,20,20,.7);color:#fff;font-size:18px}
-.status{position:absolute;top:50%;left:0;right:0;text-align:center;color:#ddd;font-size:15px;z-index:3;padding:0 30px}
-.bottom{position:absolute;left:0;right:0;bottom:0;padding:18px 22px 28px;z-index:5}
-.actions{display:flex;align-items:center;justify-content:space-between;gap:12px}.side{border:1px solid #555;background:rgba(25,25,25,.85);color:#fff;padding:13px 15px;border-radius:24px;font-weight:700}
-.capture{width:78px;height:78px;border-radius:50%;border:5px solid #fff;background:#eee;box-shadow:0 0 0 2px rgba(255,255,255,.15)}
-.ai{border:0;background:#ffd400;color:#111;padding:14px 16px;border-radius:24px;font-weight:900}
-input[type=file]{display:none}
-.preview{display:none;position:absolute;inset:0;z-index:8;background:#000}.preview img{width:100%;height:100%;object-fit:contain}.previewbar{position:absolute;left:0;right:0;bottom:0;padding:20px;display:flex;gap:10px;justify-content:center;background:linear-gradient(transparent,#000)}
-.previewbar button{padding:13px 18px;border-radius:24px;border:1px solid #555;background:#222;color:#fff;font-weight:700}.previewbar .use{background:#ffd400;color:#111;border:0}
-.toast{position:absolute;bottom:125px;left:50%;transform:translateX(-50%);z-index:10;background:#fff;color:#111;padding:10px 15px;border-radius:18px;font-size:13px;display:none;white-space:nowrap}
+*{box-sizing:border-box}
+body{
+ margin:0;background:#090a0f;color:white;
+ font-family:Arial,sans-serif;overflow:hidden
+}
+.app{height:100vh;max-width:430px;margin:auto;position:relative;background:#090a0f}
+.screen{display:none;height:100vh;position:relative}
+.screen.active{display:block}
+
+.camera{background:#111;overflow:hidden}
+#video{
+ position:absolute;width:100%;height:100%;object-fit:cover;
+ transform:scaleX(-1)
+}
+.overlay{
+ position:absolute;inset:0;
+ background:linear-gradient(#0007,transparent 30%,transparent 65%,#000c)
+}
+.logo{
+ position:absolute;top:25px;left:22px;
+ font-size:27px;font-weight:900;letter-spacing:2px
+}
+.logo span{color:#ffd400}
+.topBtns{position:absolute;right:18px;top:22px;display:flex;gap:10px}
+.round{
+ width:48px;height:48px;border-radius:50%;
+ background:#111b;border:1px solid #777;
+ display:flex;align-items:center;justify-content:center;font-size:22px
+}
+.status{
+ position:absolute;top:50%;width:100%;text-align:center;
+ color:#ddd;font-size:16px
+}
+.bottom{
+ position:absolute;bottom:25px;width:100%;
+ display:flex;align-items:center;justify-content:space-around
+}
+button{
+ border:0;border-radius:30px;padding:15px 22px;
+ font-weight:800;font-size:16px
+}
+.gallery{background:#17181d;color:white;border:1px solid #777}
+.ai{background:#ffd400;color:#080808}
+.capture{
+ width:82px;height:82px;border-radius:50%;
+ background:white;border:7px solid #bbb;padding:0
+}
+
+.nav{
+ position:absolute;bottom:0;width:100%;height:75px;
+ background:#0b0c11ee;border-top:1px solid #292a30;
+ display:flex;justify-content:space-around;align-items:center
+}
+.nav button{
+ background:none;color:#888;padding:8px;font-size:12px
+}
+.nav button.active{color:#ffd400}
+.navIcon{font-size:23px;display:block;margin-bottom:3px}
+
+.page{padding:25px 20px 100px;overflow:auto;height:100vh}
+h1{margin:0 0 25px;font-size:30px}
+.card{
+ background:#15161c;border:1px solid #292b32;
+ border-radius:20px;padding:18px;margin-bottom:15px
+}
+.aiBox{
+ border:1px solid #ffd40055;
+ background:linear-gradient(145deg,#191810,#111);
+ padding:22px;border-radius:22px
+}
+.aiBox h2{margin-top:0}
+.yellow{background:#ffd400;color:#050505;width:100%}
+.storyRow{display:flex;gap:15px;overflow:auto}
+.story{
+ min-width:70px;text-align:center;font-size:12px
+}
+.avatar{
+ width:62px;height:62px;border-radius:50%;
+ border:3px solid #ffd400;
+ background:#25262d;display:flex;
+ align-items:center;justify-content:center;font-size:25px
+}
+.chat{
+ display:flex;align-items:center;gap:14px;
+ padding:15px 0;border-bottom:1px solid #292a30
+}
+.chat .avatar{width:50px;height:50px}
+.chat p{margin:4px 0;color:#888}
+.profile{text-align:center;padding-top:60px}
+.bigAvatar{
+ width:100px;height:100px;border-radius:50%;
+ margin:auto;background:#24252b;
+ border:3px solid #ffd400;
+ display:flex;align-items:center;justify-content:center;
+ font-size:45px
+}
+.statRow{
+ display:flex;justify-content:space-around;
+ margin:30px 0
+}
+.stat b{font-size:22px;display:block}
+.stat span{color:#888;font-size:12px}
+input{
+ width:100%;padding:16px;border-radius:15px;
+ border:1px solid #333;background:#15161c;
+ color:white;font-size:16px;margin:10px 0
+}
+.hidden{display:none}
 </style>
 </head>
+
 <body>
 <div class="app">
-<section class="camera">
-<video id="video" autoplay playsinline muted></video>
-<div class="scrim"></div>
-<div class="top"><div class="logo">CLICK IT</div><button class="pill" id="permissionBtn">Allow Camera</button></div>
-<div class="controls">
-<button class="ctrl" id="switchBtn" title="Switch camera">↻</button>
-<button class="ctrl" id="flashBtn" title="Flash">⚡</button>
-</div>
-<div class="status" id="status">Tap “Allow Camera” to start your camera.</div>
-<div class="bottom">
-<div class="actions">
-<label class="side">Gallery<input id="fileInput" type="file" accept="image/*,video/*"></label>
-<button class="capture" id="captureBtn" aria-label="Capture photo"></button>
-<button class="ai" id="aiBtn">AI CREATE</button>
-</div>
-</div>
-<div class="toast" id="toast"></div>
 
-<div class="preview" id="preview">
-<img id="previewImg" alt="Captured photo">
-<div class="previewbar">
-<button id="retakeBtn">Retake</button>
-<button class="use" id="useBtn">Use Click</button>
-</div>
-</div>
+<!-- CAMERA -->
+<section id="camera" class="screen active camera">
+ <video id="video" autoplay playsinline></video>
+ <div class="overlay"></div>
+
+ <div class="logo">CLICK <span>IT</span></div>
+
+ <div class="topBtns">
+  <button class="round" onclick="flipCamera()">↻</button>
+  <button class="round" onclick="toggleFlash()">⚡</button>
+ </div>
+
+ <div class="status" id="status">Camera ready — tap the white button to CLICK.</div>
+
+ <div class="bottom">
+  <button class="gallery" onclick="gallery()">Gallery</button>
+  <button class="capture" onclick="capture()"></button>
+  <button class="ai" onclick="show('create')">AI CREATE</button>
+ </div>
 </section>
+
+<!-- AI CREATE -->
+<section id="create" class="screen">
+ <div class="page">
+  <h1>AI CREATE</h1>
+
+  <div class="aiBox">
+   <h2>Turn your Click into something different.</h2>
+   <p style="color:#aaa">Choose an AI creation style.</p>
+
+   <button class="yellow" onclick="aiAction('Cinematic')">Cinematic</button><br><br>
+   <button class="yellow" onclick="aiAction('Anime')">Anime Style</button><br><br>
+   <button class="yellow" onclick="aiAction('Retro 90s')">Retro 90s</button><br><br>
+   <button class="yellow" onclick="aiAction('AI Portrait')">AI Portrait</button>
+  </div>
+
+  <div class="card">
+   <h3>AI Caption</h3>
+   <p id="caption" style="color:#aaa">Your AI caption will appear here.</p>
+   <button class="yellow" onclick="caption()">Generate Caption</button>
+  </div>
+ </div>
+ <Nav/>
+</section>
+
+<!-- STORIES -->
+<section id="stories" class="screen">
+ <div class="page">
+  <h1>Stories</h1>
+
+  <div class="storyRow">
+   <div class="story"><div class="avatar">+</div>Add</div>
+   <div class="story"><div class="avatar">V</div>Veer</div>
+   <div class="story"><div class="avatar">A</div>Alex</div>
+   <div class="story"><div class="avatar">R</div>Rahul</div>
+   <div class="story"><div class="avatar">S</div>Sam</div>
+  </div>
+
+  <div class="card" style="margin-top:25px">
+   <h3>Your Story</h3>
+   <p style="color:#888">Share a Click for 24 hours.</p>
+   <button class="yellow" onclick="alert('Story composer coming next')">+ Add to Story</button>
+  </div>
+ </div>
+ <Nav/>
+</section>
+
+<!-- CHAT -->
+<section id="chat" class="screen">
+ <div class="page">
+  <h1>Chat</h1>
+
+  <input placeholder="Search friends...">
+
+  <div class="chat">
+   <div class="avatar">A</div>
+   <div><b>Alex</b><p>Sent a Click</p></div>
+  </div>
+
+  <div class="chat">
+   <div class="avatar">R</div>
+   <div><b>Rahul</b><p>Hey!</p></div>
+  </div>
+
+  <div class="chat">
+   <div class="avatar">S</div>
+   <div><b>Sam</b><p>🔥</p></div>
+  </div>
+
+  <button class="yellow" style="margin-top:25px" onclick="alert('New chat coming next')">
+   + New Chat
+  </button>
+ </div>
+ <Nav/>
+</section>
+
+<!-- PROFILE -->
+<section id="profile" class="screen">
+ <div class="page profile">
+  <div class="bigAvatar">V</div>
+  <h1 style="margin:15px 0 5px">Veer</h1>
+  <p style="color:#888">@clickit_user</p>
+
+  <div class="statRow">
+   <div class="stat"><b>0</b><span>Clicks</span></div>
+   <div class="stat"><b>0</b><span>Friends</span></div>
+   <div class="stat"><b>0</b><span>Moments</span></div>
+  </div>
+
+  <div class="card" style="text-align:left">
+   <h3>Your Privacy</h3>
+   <p style="color:#888">Control who can see your Clicks.</p>
+   <button class="yellow" onclick="alert('Privacy settings coming next')">
+    Privacy Settings
+   </button>
+  </div>
+ </div>
+ <Nav/>
+</section>
+
 </div>
 
 <script>
-let stream=null, facingMode='user', track=null, flashOn=false;
-const video=document.getElementById('video'), statusEl=document.getElementById('status');
-const preview=document.getElementById('preview'), previewImg=document.getElementById('previewImg');
-const toast=document.getElementById('toast');
-
-function msg(t){statusEl.textContent=t}
-function toastMsg(t){toast.textContent=t;toast.style.display='block';setTimeout(()=>toast.style.display='none',1800)}
+let stream;
+let facing="user";
+let flash=false;
 
 async function startCamera(){
- if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-   msg('Camera needs HTTPS hosting in Chrome. Gallery still works.');
-   return;
- }
  try{
-   if(stream) stream.getTracks().forEach(t=>t.stop());
-   stream=await navigator.mediaDevices.getUserMedia({
-     video:{facingMode:{ideal:facingMode},width:{ideal:1080},height:{ideal:1920}},
-     audio:false
-   });
-   video.srcObject=stream;
-   track=stream.getVideoTracks()[0];
-   video.classList.toggle('mirror',facingMode==='user');
-   msg('Camera ready — tap the white button to CLICK.');
-   document.getElementById('permissionBtn').textContent='Camera Ready';
+  stream=await navigator.mediaDevices.getUserMedia({
+   video:{facingMode:facing},
+   audio:false
+  });
+  document.getElementById("video").srcObject=stream;
+  document.getElementById("status").innerText=
+   "Camera ready — tap the white button to CLICK.";
  }catch(e){
-   msg('Camera permission blocked. Allow camera in Chrome, or use Gallery.');
+  document.getElementById("status").innerText=
+   "Camera permission required.";
  }
 }
 
-document.getElementById('permissionBtn').onclick=startCamera;
-document.getElementById('switchBtn').onclick=async()=>{facingMode=facingMode==='user'?'environment':'user';await startCamera()};
-document.getElementById('flashBtn').onclick=async()=>{
- flashOn=!flashOn;
- try{
-   if(track && track.getCapabilities && track.getCapabilities().torch) await track.applyConstraints({advanced:[{torch:flashOn}]});
-   else toastMsg('Flash control depends on your browser/device.');
- }catch(e){toastMsg('Flash not supported here.')}
-};
+function flipCamera(){
+ facing=facing==="user"?"environment":"user";
+ if(stream) stream.getTracks().forEach(t=>t.stop());
+ startCamera();
+}
 
-document.getElementById('captureBtn').onclick=()=>{
- if(!video.videoWidth){toastMsg('Start camera first');return}
- const c=document.createElement('canvas'); c.width=video.videoWidth;c.height=video.videoHeight;
- const ctx=c.getContext('2d');
- if(facingMode==='user'){ctx.translate(c.width,0);ctx.scale(-1,1)}
- ctx.drawImage(video,0,0,c.width,c.height);
- previewImg.src=c.toDataURL('image/jpeg',.92);
- preview.style.display='block';
-};
+function toggleFlash(){
+ flash=!flash;
+ document.body.style.filter=flash?"brightness(1.35)":"none";
+}
 
-document.getElementById('retakeBtn').onclick=()=>preview.style.display='none';
-document.getElementById('useBtn').onclick=()=>{
- preview.style.display='none';
- toastMsg('Click saved for the next AI CREATE step.');
-};
-document.getElementById('aiBtn').onclick=()=>toastMsg('AI CREATE is the next module.');
+function capture(){
+ document.getElementById("status").innerText="CLICK captured!";
+ setTimeout(()=>{
+  document.getElementById("status").innerText=
+   "Saved — ready for AI CREATE.";
+ },1200);
+}
 
-document.getElementById('fileInput').onchange=(e)=>{
- const file=e.target.files[0]; if(!file)return;
- if(file.type.startsWith('image/')){
-   previewImg.src=URL.createObjectURL(file); preview.style.display='block';
- }else toastMsg('Video selected — video editor comes next.');
-};
+function gallery(){
+ let i=document.createElement("input");
+ i.type="file";
+ i.accept="image/*,video/*";
+ i.click();
+}
 
-window.addEventListener('beforeunload',()=>{if(stream)stream.getTracks().forEach(t=>t.stop())});
+function aiAction(style){
+ alert(style+" AI creation selected.");
+}
+
+function caption(){
+ let captions=[
+  "No filter. Just the moment.",
+  "Clicked different.",
+  "One moment. One Click.",
+  "Create your own moment.",
+  "This Click says enough."
+ ];
+ document.getElementById("caption").innerText=
+  captions[Math.floor(Math.random()*captions.length)];
+}
+
+function show(id){
+ document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));
+ document.getElementById(id).classList.add("active");
+}
+
+function Nav(){
+ document.currentScript?.remove();
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+ startCamera();
+});
 </script>
+
+<script>
+/* Bottom navigation */
+document.querySelectorAll(".screen").forEach(screen=>{
+ if(screen.id!=="camera"){
+  let n=document.createElement("div");
+  n.className="nav";
+  n.innerHTML=`
+   <button onclick="show('camera')"><span class="navIcon">⌾</span>CLICK</button>
+   <button onclick="show('create')"><span class="navIcon">✦</span>CREATE</button>
+   <button onclick="show('stories')"><span class="navIcon">◉</span>STORIES</button>
+   <button onclick="show('chat')"><span class="navIcon">☵</span>CHAT</button>
+   <button onclick="show('profile')"><span class="navIcon">●</span>ME</button>
+  `;
+  screen.appendChild(n);
+ }
+});
+</script>
+
 </body>
 </html>
