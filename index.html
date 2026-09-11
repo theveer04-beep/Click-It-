@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090909">
+<title>CLICK IT — Camera v1</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;background:#000;color:#fff;font-family:Arial,sans-serif}
+body{min-height:100vh}.app{max-width:430px;margin:auto;min-height:100vh;background:#090909;position:relative;overflow:hidden}
+.camera{height:100vh;min-height:650px;position:relative;background:#090909;overflow:hidden}
+video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#151515}
+video.mirror{transform:scaleX(-1)}
+.scrim{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.62),transparent 22%,transparent 68%,rgba(0,0,0,.78))}
+.top{position:absolute;top:0;left:0;right:0;padding:22px 18px;display:flex;justify-content:space-between;align-items:center;z-index:4}
+.logo{font-weight:900;letter-spacing:2px;font-size:22px}.pill{background:rgba(25,25,25,.75);border:1px solid #555;padding:10px 13px;border-radius:22px;color:#fff}
+.controls{position:absolute;top:85px;right:18px;display:flex;flex-direction:column;gap:12px;z-index:4}.ctrl{width:42px;height:42px;border-radius:50%;border:1px solid #666;background:rgba(20,20,20,.7);color:#fff;font-size:18px}
+.status{position:absolute;top:50%;left:0;right:0;text-align:center;color:#ddd;font-size:15px;z-index:3;padding:0 30px}
+.bottom{position:absolute;left:0;right:0;bottom:0;padding:18px 22px 28px;z-index:5}
+.actions{display:flex;align-items:center;justify-content:space-between;gap:12px}.side{border:1px solid #555;background:rgba(25,25,25,.85);color:#fff;padding:13px 15px;border-radius:24px;font-weight:700}
+.capture{width:78px;height:78px;border-radius:50%;border:5px solid #fff;background:#eee;box-shadow:0 0 0 2px rgba(255,255,255,.15)}
+.ai{border:0;background:#ffd400;color:#111;padding:14px 16px;border-radius:24px;font-weight:900}
+input[type=file]{display:none}
+.preview{display:none;position:absolute;inset:0;z-index:8;background:#000}.preview img{width:100%;height:100%;object-fit:contain}.previewbar{position:absolute;left:0;right:0;bottom:0;padding:20px;display:flex;gap:10px;justify-content:center;background:linear-gradient(transparent,#000)}
+.previewbar button{padding:13px 18px;border-radius:24px;border:1px solid #555;background:#222;color:#fff;font-weight:700}.previewbar .use{background:#ffd400;color:#111;border:0}
+.toast{position:absolute;bottom:125px;left:50%;transform:translateX(-50%);z-index:10;background:#fff;color:#111;padding:10px 15px;border-radius:18px;font-size:13px;display:none;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="app">
+<section class="camera">
+<video id="video" autoplay playsinline muted></video>
+<div class="scrim"></div>
+<div class="top"><div class="logo">CLICK IT</div><button class="pill" id="permissionBtn">Allow Camera</button></div>
+<div class="controls">
+<button class="ctrl" id="switchBtn" title="Switch camera">↻</button>
+<button class="ctrl" id="flashBtn" title="Flash">⚡</button>
+</div>
+<div class="status" id="status">Tap “Allow Camera” to start your camera.</div>
+<div class="bottom">
+<div class="actions">
+<label class="side">Gallery<input id="fileInput" type="file" accept="image/*,video/*"></label>
+<button class="capture" id="captureBtn" aria-label="Capture photo"></button>
+<button class="ai" id="aiBtn">AI CREATE</button>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<div class="preview" id="preview">
+<img id="previewImg" alt="Captured photo">
+<div class="previewbar">
+<button id="retakeBtn">Retake</button>
+<button class="use" id="useBtn">Use Click</button>
+</div>
+</div>
+</section>
+</div>
+
+<script>
+let stream=null, facingMode='user', track=null, flashOn=false;
+const video=document.getElementById('video'), statusEl=document.getElementById('status');
+const preview=document.getElementById('preview'), previewImg=document.getElementById('previewImg');
+const toast=document.getElementById('toast');
+
+function msg(t){statusEl.textContent=t}
+function toastMsg(t){toast.textContent=t;toast.style.display='block';setTimeout(()=>toast.style.display='none',1800)}
+
+async function startCamera(){
+ if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+   msg('Camera needs HTTPS hosting in Chrome. Gallery still works.');
+   return;
+ }
+ try{
+   if(stream) stream.getTracks().forEach(t=>t.stop());
+   stream=await navigator.mediaDevices.getUserMedia({
+     video:{facingMode:{ideal:facingMode},width:{ideal:1080},height:{ideal:1920}},
+     audio:false
+   });
+   video.srcObject=stream;
+   track=stream.getVideoTracks()[0];
+   video.classList.toggle('mirror',facingMode==='user');
+   msg('Camera ready — tap the white button to CLICK.');
+   document.getElementById('permissionBtn').textContent='Camera Ready';
+ }catch(e){
+   msg('Camera permission blocked. Allow camera in Chrome, or use Gallery.');
+ }
+}
+
+document.getElementById('permissionBtn').onclick=startCamera;
+document.getElementById('switchBtn').onclick=async()=>{facingMode=facingMode==='user'?'environment':'user';await startCamera()};
+document.getElementById('flashBtn').onclick=async()=>{
+ flashOn=!flashOn;
+ try{
+   if(track && track.getCapabilities && track.getCapabilities().torch) await track.applyConstraints({advanced:[{torch:flashOn}]});
+   else toastMsg('Flash control depends on your browser/device.');
+ }catch(e){toastMsg('Flash not supported here.')}
+};
+
+document.getElementById('captureBtn').onclick=()=>{
+ if(!video.videoWidth){toastMsg('Start camera first');return}
+ const c=document.createElement('canvas'); c.width=video.videoWidth;c.height=video.videoHeight;
+ const ctx=c.getContext('2d');
+ if(facingMode==='user'){ctx.translate(c.width,0);ctx.scale(-1,1)}
+ ctx.drawImage(video,0,0,c.width,c.height);
+ previewImg.src=c.toDataURL('image/jpeg',.92);
+ preview.style.display='block';
+};
+
+document.getElementById('retakeBtn').onclick=()=>preview.style.display='none';
+document.getElementById('useBtn').onclick=()=>{
+ preview.style.display='none';
+ toastMsg('Click saved for the next AI CREATE step.');
+};
+document.getElementById('aiBtn').onclick=()=>toastMsg('AI CREATE is the next module.');
+
+document.getElementById('fileInput').onchange=(e)=>{
+ const file=e.target.files[0]; if(!file)return;
+ if(file.type.startsWith('image/')){
+   previewImg.src=URL.createObjectURL(file); preview.style.display='block';
+ }else toastMsg('Video selected — video editor comes next.');
+};
+
+window.addEventListener('beforeunload',()=>{if(stream)stream.getTracks().forEach(t=>t.stop())});
+</script>
+</body>
+</html>
