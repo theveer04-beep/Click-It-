@@ -1,4 +1,4 @@
-name: Build CLICK IT A2Z APK
+name: Build CLICK IT APK
 
 on:
   workflow_dispatch:
@@ -12,423 +12,45 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Install Android SDK
-        shell: bash
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Create Android project
-        shell: bash
+      - name: Extract CLICK IT project
         run: |
-          rm -rf app build.gradle settings.gradle gradle.properties
-          mkdir -p app/src/main/java/com/clickit/app
-          mkdir -p app/src/main/res/drawable
-          mkdir -p app/src/main/res/mipmap-hdpi
-          mkdir -p app/src/main/res/mipmap-mdpi
-          mkdir -p app/src/main/res/mipmap-xhdpi
-          mkdir -p app/src/main/res/mipmap-xxhdpi
-          mkdir -p app/src/main/res/mipmap-xxxhdpi
-          mkdir -p app/src/main/res/values
-          mkdir -p app/src/main/assets
+          mkdir project
+          ZIP=$(find . -maxdepth 1 -type f -name "*.zip" | head -1)
+          echo "Using ZIP: $ZIP"
+          unzip -q "$ZIP" -d project
 
-          cat > settings.gradle <<'EOF'
-          pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          rootProject.name = "CLICK_IT"
-          include(":app")
-          EOF
-
-          cat > build.gradle <<'EOF'
-          plugins {
-              id 'com.android.application' version '8.7.3' apply false
-          }
-          EOF
-
-          cat > gradle.properties <<'EOF'
-          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
-          android.useAndroidX=true
-          EOF
-
-          cat > app/build.gradle <<'EOF'
-          plugins {
-              id 'com.android.application'
-          }
-
-          android {
-              namespace 'com.clickit.app'
-              compileSdk 35
-
-              defaultConfig {
-                  applicationId 'com.clickit.app'
-                  minSdk 23
-                  targetSdk 35
-                  versionCode 1
-                  versionName '1.0'
-              }
-
-              buildTypes {
-                  release {
-                      minifyEnabled false
-                  }
-              }
-          }
-
-          dependencies {
-              implementation 'androidx.webkit:webkit:1.12.1'
-          }
-          EOF
-
-          cat > app/src/main/res/values/colors.xml <<'EOF'
-          <resources>
-              <color name="black">#05060A</color>
-              <color name="white">#FFFFFF</color>
-          </resources>
-          EOF
-
-          cat > app/src/main/res/values/strings.xml <<'EOF'
-          <resources>
-              <string name="app_name">CLICK IT</string>
-          </resources>
-          EOF
-
-          cat > app/src/main/res/drawable/click_it_icon.xml <<'EOF'
-          <vector xmlns:android="http://schemas.android.com/apk/res/android"
-              android:width="108dp"
-              android:height="108dp"
-              android:viewportWidth="108"
-              android:viewportHeight="108">
-              <path android:fillColor="#05060A" android:pathData="M0,0h108v108h-108z"/>
-              <path android:fillColor="#8A5CFF" android:pathData="M54,16A38,38 0,1 0,54 92A38,38 0,1 0,54 16M54,27A27,27 0,1 1,54 81A27,27 0,1 1,54 27"/>
-              <path android:fillColor="#FFFFFF" android:pathData="M45,43h18v22h-18z"/>
-              <path android:fillColor="#D7A84A" android:pathData="M73,27a5,5 0,1 0,0.1 0z"/>
-          </vector>
-          EOF
-
-          cat > app/src/main/AndroidManifest.xml <<'EOF'
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <uses-permission android:name="android.permission.CAMERA" />
-              <uses-permission android:name="android.permission.RECORD_AUDIO" />
-              <uses-permission android:name="android.permission.INTERNET" />
-
-              <application
-                  android:allowBackup="false"
-                  android:usesCleartextTraffic="false"
-                  android:theme="@style/AppTheme"
-                  android:label="@string/app_name"
-                  android:icon="@drawable/click_it_icon"
-                  android:roundIcon="@drawable/click_it_icon">
-                  <activity
-                      android:name=".MainActivity"
-                      android:screenOrientation="portrait"
-                      android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
-          EOF
-
-          cat > app/src/main/res/values/styles.xml <<'EOF'
-          <resources>
-              <style name="AppTheme" parent="android:style/Theme.Material.NoActionBar">
-                  <item name="android:fontFamily">sans</item>
-                  <item name="android:windowLightStatusBar">false</item>
-                  <item name="android:statusBarColor">#05060A</item>
-                  <item name="android:navigationBarColor">#05060A</item>
-                  <item name="android:windowActionModeOverlay">true</item>
-              </style>
-          </resources>
-          EOF
-
-          cat > app/src/main/java/com/clickit/app/MainActivity.java <<'EOF'
-          package com.clickit.app;
-
-          import android.Manifest;
-          import android.app.Activity;
-          import android.content.pm.PackageManager;
-          import android.os.Bundle;
-          import android.webkit.PermissionRequest;
-          import android.webkit.WebChromeClient;
-          import android.webkit.WebView;
-          import android.webkit.WebViewClient;
-          import androidx.webkit.WebViewAssetLoader;
-          import androidx.core.app.ActivityCompat;
-          import androidx.core.content.ContextCompat;
-
-          public class MainActivity extends Activity {
-              private WebView webView;
-              private static final int REQ = 41;
-
-              @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-
-                  webView = new WebView(this);
-                  webView.setBackgroundColor(0xFF05060A);
-                  webView.getSettings().setJavaScriptEnabled(true);
-                  webView.getSettings().setDomStorageEnabled(true);
-                  webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
-                  webView.getSettings().setAllowFileAccess(false);
-                  webView.getSettings().setAllowContentAccess(false);
-
-                  WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
-                          .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
-                          .build();
-
-                  webView.setWebViewClient(new WebViewClient() {
-                      @Override
-                      public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view, String url) {
-                          return loader.shouldInterceptRequest(android.net.Uri.parse(url));
-                      }
-                  });
-
-                  webView.setWebChromeClient(new WebChromeClient() {
-                      @Override
-                      public void onPermissionRequest(final PermissionRequest request) {
-                          runOnUiThread(() -> {
-                              if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA)
-                                      == PackageManager.PERMISSION_GRANTED) {
-                                  request.grant(request.getResources());
-                              }
-                          });
-                      }
-                  });
-
-                  if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                          != PackageManager.PERMISSION_GRANTED) {
-                      ActivityCompat.requestPermissions(this,
-                              new String[]{Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO}, REQ);
-                  }
-
-                  setContentView(webView);
-                  webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
-              }
-
-              @Override
-              public void onBackPressed() {
-                  if (webView.canGoBack()) webView.goBack();
-                  else super.onBackPressed();
-              }
-          }
-          EOF
-
-          cat > app/src/main/assets/index.html <<'EOF'
-          <!doctype html>
-          <html>
-          <head>
-          <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-          <meta name="theme-color" content="#05060A">
-          <title>CLICK IT</title>
-          <style>
-          *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-          html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05060A;color:#fff;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
-          button{font:inherit;color:inherit;border:0}
-          .app{height:100%;display:flex;flex-direction:column;background:radial-gradient(circle at 50% 15%,#19172d 0,#080910 36%,#05060A 72%)}
-          .top{height:72px;display:flex;align-items:center;justify-content:space-between;padding:16px 18px 8px;z-index:5}
-          .brand{font-weight:900;letter-spacing:2.8px;font-size:19px}
-          .sub{font-size:10px;color:#8f91a3;letter-spacing:1.2px;margin-top:3px}
-          .topIcon{width:42px;height:42px;border-radius:15px;background:#11131d;border:1px solid #292c3b;display:grid;place-items:center;font-size:19px}
-          .screen{flex:1;min-height:0;overflow:auto;padding:8px 16px 104px}
-          .screen::-webkit-scrollbar{display:none}
-          .camera{height:100%;margin:-8px -16px -104px;position:relative;overflow:hidden;background:#000}
-          video{width:100%;height:100%;object-fit:cover;background:#090a0f}
-          .cameraShade{position:absolute;inset:0;background:linear-gradient(#0008,transparent 24%,transparent 62%,#000b)}
-          .cameraCenter{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
-          .lens{width:84px;height:84px;border-radius:50%;border:2px solid #ffffff99;box-shadow:0 0 30px #9b72ff55, inset 0 0 25px #fff1}
-          .lens:after{content:"";display:block;width:10px;height:10px;background:#d7a84a;border-radius:50%;margin:11px}
-          .cameraTools{position:absolute;top:84px;right:16px;display:flex;flex-direction:column;gap:10px}
-          .tool{width:44px;height:44px;border-radius:16px;background:#090a0dcc;border:1px solid #ffffff28;display:grid;place-items:center;font-size:18px}
-          .cameraBottom{position:absolute;bottom:24px;left:16px;right:16px;display:flex;align-items:center;justify-content:space-between}
-          .gallery{width:50px;height:50px;border-radius:15px;background:#ffffff18;border:1px solid #ffffff40;overflow:hidden}
-          .gallery img{width:100%;height:100%;object-fit:cover}
-          .shutter{width:78px;height:78px;border-radius:50%;background:#fff;border:5px solid #ffffff55;box-shadow:0 0 0 4px #0008;display:grid;place-items:center}
-          .shutter:after{content:"";width:64px;height:64px;border:2px solid #151620;border-radius:50%}
-          .flip{width:50px;height:50px;border-radius:15px;background:#ffffff18;border:1px solid #ffffff40;display:grid;place-items:center;font-size:20px}
-          .aiBtn{position:absolute;left:50%;transform:translateX(-50%);bottom:116px;padding:11px 17px;border-radius:18px;background:#171526dd;border:1px solid #a87cff77;box-shadow:0 0 25px #8a5cff22;font-weight:800;font-size:12px;letter-spacing:.5px}
-          .bottom{position:absolute;bottom:0;left:0;right:0;height:88px;padding:10px 12px 14px;background:linear-gradient(transparent,#05060A 32%);display:flex;justify-content:space-around;align-items:flex-end;z-index:8}
-          .nav{width:19%;max-width:78px;text-align:center;color:#777b8f;font-size:10px}
-          .nav b{display:grid;place-items:center;width:46px;height:38px;margin:auto;border-radius:15px;font-size:20px}
-          .nav.active{color:#fff}.nav.active b{background:#1a1728;border:1px solid #8a5cff66;box-shadow:0 0 20px #8a5cff18}
-          h1{font-size:27px;margin:12px 0 5px;letter-spacing:-.8px}
-          .muted{color:#8f91a3;font-size:13px}
-          .hero{padding:18px;border:1px solid #292c3b;border-radius:25px;background:linear-gradient(145deg,#17152a,#0c0e16);margin-top:18px}
-          .heroTitle{font-size:20px;font-weight:850}.hero p{color:#a2a5b5;font-size:13px;line-height:1.45}
-          .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
-          .card{min-height:125px;padding:14px;border:1px solid #282b39;border-radius:21px;background:linear-gradient(150deg,#141620,#0b0c12)}
-          .card .emoji{font-size:28px}.card strong{display:block;margin-top:12px}.card span{display:block;color:#8e91a1;font-size:11px;margin-top:5px}
-          .wide{grid-column:1/-1}
-          .row{display:flex;gap:10px;align-items:center}
-          .search{margin-top:18px;display:flex;gap:8px}.search input{flex:1;min-width:0;padding:15px;border-radius:17px;border:1px solid #2b2e3c;background:#10121a;color:#fff;outline:none}
-          .pill{padding:14px 16px;border-radius:17px;background:#8a5cff;color:#fff;font-weight:800}
-          .profileCard{margin-top:18px;padding:20px;border:1px solid #292c3b;border-radius:25px;background:#0e1018;text-align:center}
-          .avatar{width:76px;height:76px;border-radius:25px;margin:auto;display:grid;place-items:center;font-size:27px;font-weight:900;background:radial-gradient(circle,#9c76ff,#211a3e);border:1px solid #b18cff66}
-          .handle{margin-top:10px;font-weight:800}.code{color:#d7a84a;font-size:12px;margin-top:6px}
-          .list{margin-top:14px;border:1px solid #292c3b;border-radius:22px;overflow:hidden}
-          .item{padding:16px;border-bottom:1px solid #20222e;display:flex;align-items:center;gap:13px;background:#0d0f16}
-          .item:last-child{border-bottom:0}.mini{width:45px;height:45px;border-radius:15px;background:#191c28;display:grid;place-items:center}
-          .itemText{flex:1}.itemText strong{font-size:13px}.itemText small{display:block;color:#858897;margin-top:4px}
-          .switch{width:46px;height:26px;border-radius:20px;background:#2a2d3a;padding:3px}.switch i{display:block;width:20px;height:20px;border-radius:50%;background:#fff}
-          .switch.on{background:#8a5cff}.switch.on i{margin-left:20px}
-          .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:#171925ee;border:1px solid #383b4c;padding:12px 16px;border-radius:15px;font-size:12px;opacity:0;transition:.25s;z-index:20;white-space:nowrap}
-          .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-          .qr{width:190px;height:190px;margin:22px auto;background:#fff;border-radius:18px;padding:12px;display:grid;grid-template-columns:repeat(9,1fr);gap:4px}
-          .qr i{background:#090a0d;border-radius:2px}.qr i:nth-child(3n){opacity:.15}
-          .tag{display:inline-block;padding:7px 10px;border-radius:12px;background:#1a1727;border:1px solid #8a5cff44;color:#b99cff;font-size:10px;margin:4px}
-          .storyBar{display:flex;gap:10px;overflow:auto;margin-top:16px}.story{min-width:72px;text-align:center;font-size:10px;color:#9295a6}.story .savatar{width:58px;height:58px;border-radius:50%;margin:auto;border:2px solid #a27bff;padding:3px}.story .savatar div{width:100%;height:100%;border-radius:50%;background:#1c1e29;display:grid;place-items:center}
-          @media(min-width:700px){.screen{max-width:700px;width:100%;margin:auto}.camera{margin-left:calc((100vw - min(700px,100vw))/ -2);margin-right:calc((100vw - min(700px,100vw))/ -2)}}
-          </style>
-          </head>
-          <body>
-          <div class="app">
-            <div class="top">
-              <div><div class="brand">CLICK IT</div><div class="sub">CLICK • CREATE • CONNECT • REMEMBER</div></div>
-              <button class="topIcon" onclick="toast('Settings coming next')">⚙</button>
-            </div>
-            <main id="screen" class="screen"></main>
-            <nav class="bottom">
-              <button class="nav active" data-s="camera" onclick="go('camera')"><b>◉</b>Camera</button>
-              <button class="nav" data-s="create" onclick="go('create')"><b>✦</b>Create</button>
-              <button class="nav" data-s="connect" onclick="go('connect')"><b>⌕</b>Connect</button>
-              <button class="nav" data-s="moments" onclick="go('moments')"><b>◎</b>Moments</button>
-              <button class="nav" data-s="profile" onclick="go('profile')"><b>◌</b>Profile</button>
-            </nav>
-            <div id="toast" class="toast"></div>
-          </div>
-          <input id="galleryInput" type="file" accept="image/*" hidden>
-
-          <script>
-          let stream=null, facing='environment', lastPhoto='';
-          const screen=document.getElementById('screen');
-
-          function go(name){
-            document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.s===name));
-            if(name==='camera') camera();
-            if(name==='create') create();
-            if(name==='connect') connect();
-            if(name==='moments') moments();
-            if(name==='profile') profile();
-          }
-          function camera(){
-            screen.innerHTML=`
-              <section class="camera">
-                <video id="video" autoplay playsinline muted></video><div class="cameraShade"></div>
-                <div class="cameraCenter"><div class="lens"></div></div>
-                <div class="cameraTools">
-                  <button class="tool" onclick="flip()">↻</button>
-                  <button class="tool" onclick="toast('Flash control available on supported devices')">⚡</button>
-                  <button class="tool" onclick="toast('Effects studio coming next')">✧</button>
-                  <button class="tool" onclick="toast('Music studio coming next')">♫</button>
-                </div>
-                <button class="aiBtn" onclick="go('create')">✦ AI CREATE</button>
-                <div class="cameraBottom">
-                  <button class="gallery" onclick="document.getElementById('galleryInput').click()">${lastPhoto?'<img src="'+lastPhoto+'">':'▧'}</button>
-                  <button class="shutter" onclick="snap()"></button>
-                  <button class="flip" onclick="flip()">↺</button>
-                </div>
-              </section>`;
-            startCamera();
-          }
-          async function startCamera(){
-            try{
-              if(stream) stream.getTracks().forEach(t=>t.stop());
-              stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing},audio:false});
-              const v=document.getElementById('video'); if(v){v.srcObject=stream;await v.play();}
-            }catch(e){toast('Camera permission allow karo');}
-          }
-          async function flip(){facing=facing==='environment'?'user':'environment';startCamera();}
-          function snap(){
-            const v=document.getElementById('video'); if(!v||!v.videoWidth){toast('Camera ready hone do');return}
-            const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);
-            lastPhoto=c.toDataURL('image/jpeg',.88);toast('CLICK captured');
-            setTimeout(camera,350);
-          }
-          document.getElementById('galleryInput').addEventListener('change',e=>{
-            const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{lastPhoto=r.result;toast('Photo selected');camera()};r.readAsDataURL(f);
-          });
-
-          function create(){screen.innerHTML=`
-            <h1>AI CREATE</h1><div class="muted">Make something that looks like you — not everyone else.</div>
-            <div class="hero"><div class="heroTitle">✦ CLICK IT Originals</div><p>Original visual worlds, AI looks, story ideas and creative tools.</p><span class="tag">NEON MONSOON</span><span class="tag">INDIAN FUTURE 2049</span><span class="tag">MIDNIGHT INDIA</span></div>
-            <div class="grid">
-              <button class="card" onclick="toast('Look Builder opened')"><div class="emoji">🪞</div><strong>Look Builder</strong><span>Era • place • light • mood</span></button>
-              <button class="card" onclick="toast('Make It Different: 4 versions')"><div class="emoji">◈</div><strong>Make It Different</strong><span>Cinematic • Strange • Luxury</span></button>
-              <button class="card" onclick="toast('AI Story Maker opened')"><div class="emoji">◫</div><strong>AI Story Maker</strong><span>Turn clicks into a story</span></button>
-              <button class="card" onclick="toast('AI Memory opened')"><div class="emoji">∞</div><strong>AI Memory</strong><span>Build your moments reel</span></button>
-              <button class="card wide" onclick="toast('Trend Radar scanning soon')"><div class="emoji">⌁</div><strong>Trend Radar</strong><span>Spot patterns before they become trends.</span></button>
-            </div>`}
-
-          function connect(){screen.innerHTML=`
-            <h1>CONNECT</h1><div class="muted">No phone number. No follower pressure.</div>
-            <div class="search"><input id="find" placeholder="@click_id"><button class="pill" onclick="findUser()">Find</button></div>
-            <div class="hero"><div class="heroTitle">Your CLICK CODE</div><p>Show this code in real life. Scan → preview → connect.</p><div class="qr">${Array.from({length:81},(_,i)=>'<i style="opacity:'+((i*17)%7===0?.12:1)+'"></i>').join('')}</div><div style="text-align:center"><b>@veer_click</b><div class="muted">Tap to share your code</div></div></div>
-            <div class="list">
-              <div class="item" onclick="toast('Scanner opening next')"><div class="mini">▣</div><div class="itemText"><strong>Scan CLICK CODE</strong><small>Connect face-to-face</small></div><b>›</b></div>
-              <div class="item"><div class="mini">⌁</div><div class="itemText"><strong>Nearby</strong><small>Optional • coarse • temporary</small></div><div class="switch on"><i></i></div></div>
-            </div>`}
-          function findUser(){const v=document.getElementById('find').value.trim();toast(v?'Profile preview for '+v:'Enter a CLICK ID');}
-
-          function moments(){screen.innerHTML=`
-            <h1>MOMENTS</h1><div class="muted">What's happening around you — without a public location map.</div>
-            <div class="storyBar">
-              ${['You','College','Concert','Cafe','Friends'].map((x,i)=>'<div class="story"><div class="savatar"><div>'+(i?'✦':'＋')+'</div></div><div>'+x+'</div></div>').join('')}
-            </div>
-            <div class="hero"><div class="heroTitle">◎ Live Moment</div><p>Create a temporary shared space for an event, place or group.</p><button class="pill" onclick="toast('Moment created — expires automatically')">Create Moment</button></div>
-            <div class="grid">
-              <div class="card"><div class="emoji">🎧</div><strong>Campus Night</strong><span>48 people • expires tonight</span></div>
-              <div class="card"><div class="emoji">☕</div><strong>Café Moment</strong><span>12 people • 180m away</span></div>
-              <div class="card wide"><div class="emoji">✦</div><strong>AI Memory Reel</strong><span>Turn a Moment into a private memory after it ends.</span></div>
-            </div>`}
-
-          function profile(){screen.innerHTML=`
-            <h1>PROFILE</h1><div class="profileCard"><div class="avatar">CI</div><div class="handle">@veer_click</div><div class="muted">CLICK. CREATE. CONNECT.</div><div class="code">CLICK CODE • CI-7X9K</div></div>
-            <div class="list">
-              <div class="item" onclick="toast('Privacy controls')"><div class="mini">⌘</div><div class="itemText"><strong>Privacy & Audience</strong><small>Only Me • Close Friends • Friends • Public</small></div><b>›</b></div>
-              <div class="item" onclick="toast('Passkey protected')"><div class="mini">◉</div><div class="itemText"><strong>Passkey</strong><small>Passwordless sign-in</small></div><b>✓</b></div>
-              <div class="item" onclick="toast('Recovery Key is protected')"><div class="mini">▣</div><div class="itemText"><strong>Recovery Key</strong><small>Use only if you lose your device</small></div><b>›</b></div>
-              <div class="item"><div class="mini">⌁</div><div class="itemText"><strong>Nearby visibility</strong><small>Temporary and optional</small></div><div class="switch"><i></i></div></div>
-            </div>`}
-
-          function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(window.__t);window.__t=setTimeout(()=>t.classList.remove('show'),2200)}
-          camera();
-          </script>
-          </body>
-          </html>
-          EOF
+      - name: Find project
+        run: |
+          SETTINGS=$(find project -name settings.gradle -type f | head -1)
+          echo "Settings: $SETTINGS"
+          echo "PROJECT_DIR=$(dirname "$SETTINGS")" >> "$GITHUB_ENV"
 
       - name: Install Gradle
-        shell: bash
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.9-bin.zip
           unzip -q gradle-8.9-bin.zip -d "$HOME"
           echo "$HOME/gradle-8.9/bin" >> "$GITHUB_PATH"
-          gradle --version
 
       - name: Build APK
-        run: gradle assembleDebug --no-daemon
+        run: |
+          cd "$PROJECT_DIR"
+          gradle assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: CLICK_IT_A2Z_APK
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
+          name: CLICK_IT_APK
+          path: "${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk"
